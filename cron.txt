@@ -1,0 +1,2 @@
+* * * * * /usr/script/viber_opener/dns_updater > /dev/null 2>&1
+* * * * * /usr/script/viber_opener/init_opener > /dev/null 2>&1

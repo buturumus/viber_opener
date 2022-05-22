@@ -1,0 +1,32 @@
+--------------------------------------------------------------
+Viber opener
+--------------------------------------------------------------
+init_opener  
+opener  
+dns_updater
+dig_from_cache_list
+dig_online_list
+--------------------------------------------------------------
+
+This is a bunch of shell scripts which allow Viber to work in some isolated network.
+
+Since Viber can't work with proxy servers there's a problem to let it work in isolated corporative network. 'Isolated' means a firewalled network without direct access to internet from any client computer. Usually client software can use proxy server for that purpose but Viber can't. It's developers said some ports should be open on firewall but that's not enough at all.
+
+How it could be done.
+
+Most of Viber network connections are connections with servers from Amazon pool, from very definite list of names. Though there are many IPs for every name and they constantly change and don't live long. 
+In our case gateway with firewall is a linux server with Iptables and Bind dns onboard and we have administrative access to the server and to client's dns settings (say, we can set it with DHCP). Then we can realize the following simlpe algorithm.
+  On the clients:
+  - set our Bind as client's dns server; 
+  On the server:
+  - make dig/nslookup for all those Viber names;  
+  - save this limited set of dns records;
+  - open on the firewall access from clients to these addresses;
+  - make Bind answer with these values to client's dns queries;
+  - repeat it periodically, for example with cron.
+
+=== Contacts ================
+e-mail:   buturumus@gmail.com
+telegram: @buturumus
+Alexander
+

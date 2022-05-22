@@ -1,0 +1,12 @@
+#!/bin/bash
+# init_opener  
+
+if [ \
+  ! "`ps -aux | grep viber_opener/opener | grep -v grep`" = "" \
+] ; then 
+  echo opener is already running
+  exit
+fi
+
+exec /usr/script/viber_opener/opener
+

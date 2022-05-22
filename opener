@@ -1,0 +1,19 @@
+#!/bin/bash
+# opener  
+
+BASE_DIR=/usr/script/viber_opener
+CACHE_DIR=/var/cache/viber_opener
+DIG_ONLINE_LIST=$BASE_DIR/dig_online_list
+DIG_FROM_CACHE_LIST=$BASE_DIR/dig_from_cache_list
+RPZ_TMP=/tmp/tmp.rpz
+RPZ_DB=/etc/bind/db.rpz
+RPZ_DB_EMPTY=/etc/bind/db.rpz.empty
+DIG="/usr/bin/dig @8.8.8.8"
+IPTABLES=/sbin/iptables
+
+$IPTABLES -F viber_direct
+for IP in `grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' $RPZ_DB` ; do
+  echo $IPTABLES -A viber_direct -p TCP --dport 443 -d $IP -j ACCEPT
+  $IPTABLES -A viber_direct -p TCP --dport 443 -d $IP -j ACCEPT
+# $IPTABLES -A viber_direct -p TCP --dport 80 -d $IP -j ACCEPT
+done

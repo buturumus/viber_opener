@@ -1,0 +1,64 @@
+#!/bin/bash
+# dns_updater
+
+BASE_DIR=/usr/script/viber_opener
+CACHE_DIR=/var/cache/viber_opener/dns_cache
+DIG_ONLINE_LIST=$BASE_DIR/dig_online_list
+DIG_FROM_CACHE_LIST=$BASE_DIR/dig_from_cache_list
+RPZ_TMP=/tmp/rpz.tmp
+RPZ_DB=/etc/bind/db.rpz
+RPZ_DB_EMPTY=/etc/bind/db.rpz.empty
+DIG="/usr/bin/dig @8.8.8.8"
+CACHE_MAX_LINES=64
+CACHE_TAIL_NUM=32
+
+# if somebody's still/already working
+if [ -s "$RPZ_TMP" ] ; then 
+  exit
+fi
+
+# update dns cache
+for HOST_NAME in `egrep -v '^#' $DIG_FROM_CACHE_LIST` ; do
+  HOST_NAMEx=""
+  for I in `seq 1 32` ; do
+    HOST_NAMEx=$HOST_NAMEx" "$HOST_NAME
+  done
+  IPS=`$DIG $HOST_NAMEx | grep -v 8.8.8.8 \
+    | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+'`
+  for IP in `printf "%s\n" "${IPS[@]}" | sort -u` ; do
+    echo $HOST_NAME : $IP 
+    echo $IP >> $CACHE_DIR/$HOST_NAME
+  done
+  tail -n $CACHE_MAX_LINES $CACHE_DIR/$HOST_NAME > $CACHE_DIR/$HOST_NAME.tmp
+  mv -f $CACHE_DIR/$HOST_NAME.tmp $CACHE_DIR/$HOST_NAME
+done
+
+# put latest vals from dns cache to rpz temp.file
+for HOST_NAME in `egrep -v '^#' $DIG_FROM_CACHE_LIST` ; do
+  for IP in `tail -n $CACHE_TAIL_NUM $CACHE_DIR/$HOST_NAME` ; do
+     echo $HOST_NAME" A "$IP >> $RPZ_TMP
+  done
+done
+
+# dig online and put results to rpz temp.list
+for HOST_NAME in `egrep -v '^#' $DIG_ONLINE_LIST` ; do
+	for IP in `$DIG $HOST_NAME | grep -v 8.8.8.8 \
+    | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' \
+  ` ; do 
+		echo $HOST_NAME" A "$IP >> $RPZ_TMP
+	done
+done
+
+# put names+ips from tmp to real rpz db
+SNUM=`date +%s`
+sed -r 's/[0-9]+\ +;\ serial/'$SNUM'\ ;\ serial/' "$RPZ_DB_EMPTY" \
+  | egrep -v '^[^\ ]+[\ ]+A[\ ]+[0-9\.]+$' | grep -vE '^$' > "$RPZ_DB".tmp
+echo >> "$RPZ_DB".tmp
+cat $RPZ_TMP >> "$RPZ_DB".tmp
+
+rm -f $RPZ_TMP
+
+echo >> "$RPZ_DB".tmp
+mv -f "$RPZ_DB".tmp "$RPZ_DB"
+/usr/sbin/rndc reload rpz
+
